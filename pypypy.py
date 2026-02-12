@@ -69,18 +69,7 @@ def play_one_round() -> int:              #int 让函数易读
 '''
 
 
-import random
-import time
- 
-
-for i in range(101):           #假装在加载                                 
-     bar = '[' + '=' * (i // 2) + ' ' * (50 - i // 2) + ']'
-     print(f"\r{bar} {i:3}%", end='',flush=True)            #end=''不换行 flush=True 输出更平滑
-     time.sleep(0.02)
-print()
-
-def main():
-     print("你好")          
+         
 
 
 
@@ -130,109 +119,128 @@ if __name__ == "__main__":        #代码结尾习惯 方便被调用
 """
 
 
-import random  # 别忘了加这个！生成随机金币需要
+import random
+import time
 
-cave_rooms = {              #字典 元组：内层字典   使用字典存储不同情况
+
+for i in range(101):           
+    bar = '[' + '=' * (i // 2) + ' ' * (50 - i // 2) + ']'
+    print(f"\r{bar} {i:3}%", end='',flush=True)
+    time.sleep(0.02)
+print("\n你好，游戏开始")
+
+# 房间数据
+cave_rooms = {             
     (1, 1): {"name": "入口大厅", "item": "火把", "trap": False, "desc": "你站在洞穴入口，地上有一根火把"},
-    (1, 2): {"name": "侧室", "item": "地图碎片", "trap": False, "desc": "狭小的侧室，张地图碎片"},
+    (1, 2): {"name": "侧室", "item": "地图碎片", "trap": False, "desc": "狭小的侧室，有一张地图碎片"},
     (2, 1): {"name": "陷阱房", "item": None, "trap": True, "desc": "松动的石板，小心陷阱"},
     (2, 2): {"name": "宝藏室", "item": "宝藏", "trap": False, "desc": "房间中央有一个宝箱"}
 }
 
+
+DIRECTIONS = {
+    "上": (-1, 0),  # x-1, y不变            #用字典封起来 不用else if
+    "下": (1, 0),   # x+1, y不变
+    "左": (0, -1),  # x不变, y-1
+    "右": (0, 1)    # x不变, y+1
+}
+
+
 def treasure_generator():
     while True:
-        yield random.randint(1, 10)                           # 可以重复找宝藏 每次金币不同
+        yield random.randint(1, 10)                          
+
 
 def get_available_rooms(current_pos):
-    x, y = current_pos         #当前坐标
-    directions = [(x+1, y), (x-1, y), (x, y+1), (x, y-1)]
-    available = filter(lambda pos: pos in cave_rooms, directions)  # filter使用lambda:后的规则 逐个检查当前坐标对应的四个方向的pos判断在不在房间里
-    return list(available)                # 转列表方便展示
+    x, y = current_pos         
+    # 遍历DIRECTIONS的偏移量，不用手写x+1,y等
+    directions = [(x + dx, y + dy) for dx, dy in DIRECTIONS.values()]
+    available = [pos for pos in directions if pos in cave_rooms]     #判断directions里坐标在不在洞穴房间里
+    return available                #不用filter和lambda
 
 def main():
-    # ↓ 新增：外层循环（控制多轮游戏）↓
     while True:
         print("=" * 30)
         print("规则：探索洞穴房间，收集道具，躲避陷阱，找到宝藏即获胜")
         print("      输入方向（上/下/左/右）移动，输入 q 退出游戏")
         print("=" * 30)
 
-        current_pos = (1, 1)                  # 初始位置（元组）
-        inventory = []                        # 背包：存储收集的道具
-        score = 0                             # 分数
-        treasure_gen = treasure_generator()  # 创建生成器，即一个存很多次金币的箱子  通过一次拿一次
+        current_pos = (1, 1)  # 初始位置
+        inventory = []        
+        score = 0             
+        treasure_gen = treasure_generator()
 
-        while True:  # 单局游戏循环
+        while True:  
             room_info = cave_rooms[current_pos]
             print(f"\n 当前位置：{room_info['name']}")
             print(f" 描述：{room_info['desc']}")
 
+           
             if room_info["trap"]:
-                print("  触发陷阱 损失 5 分")   # 触发陷阱后强制回到入口
+                print("  触发陷阱 损失 5 分")
                 score -= 5
                 current_pos = (1, 1)
                 continue
 
+            # 收集道具
             if room_info["item"] and room_info["item"] not in inventory:
                 inventory.append(room_info["item"])
                 print(f" 收集到：{room_info['item']}")
-                score += 10                            # 收集道具加分
+                score += 10
 
+           
             if room_info["item"] == "宝藏":
-                treasure_count = next(treasure_gen)  # 调用生成器  拿箱子的下一次金币
+                treasure_count = next(treasure_gen)
                 score += treasure_count * 5
                 print(f"\n 恭喜你找到宝藏 获得 {treasure_count} 个金币，加分 {treasure_count * 5}！")
                 print(f" 最终得分：{score}")
                 print(f" 你的背包：{inventory}")
-                break  # 退出单局循环
+                break
 
-            # 显示可移动的房间  （迭代器遍历结果）
+           
             available_rooms = get_available_rooms(current_pos)
             print(f"\n  可移动的方向：")                                                  
             for pos in available_rooms:                        
-                dx = pos[0] - current_pos[0]               # 把坐标转成方向描述
-                dy = pos[1] - current_pos[1]                #这个pos是上面的可进入房间函数传出来的
-                if dx == 1:
-                    direction = "下"
-                elif dx == -1:
-                    direction = "上"
-                elif dy == 1:
-                    direction = "右"
-                elif dy == -1:
-                    direction = "左"
-                print(f"  - {direction}：{cave_rooms[pos]['name']}")       #告诉玩家相邻坐标是什么
+                dx = pos[0] - current_pos[0]               
+                dy = pos[1] - current_pos[1]
+                # 反向查找：通过偏移量找方向名（更优雅）
+                direction = [k for k, v in DIRECTIONS.items() if v == (dx, dy)][0]
+                print(f"  - {direction}：{cave_rooms[pos]['name']}")
 
+            
             user_input = input("\n请输入移动方向（上/下/左/右），或 q 退出：").lower()
             if user_input == "q":
                 print(f"\n 游戏退出！最终得分：{score}")
                 print(f" 你的背包：{inventory}")
-                return  # 直接结束main函数
+                return  
 
-            x, y = current_pos
-            if user_input == "上":
-                new_pos = (x-1, y)
-            elif user_input == "下":
-                new_pos = (x+1, y)
-            elif user_input == "左":
-                new_pos = (x, y-1)
-            elif user_input == "右":
-                new_pos = (x, y+1)
-            else:
+           
+            
+            if user_input not in DIRECTIONS:
                 print(" 输入错误！请输入 上/下/左/右 或 q")
                 continue
 
-            if new_pos in cave_rooms:  #是否还在房间里
-                current_pos = new_pos
-            else:
-                print(" 这个方向没有房间 重新选择移动方向")
+            #保存移动前的坐标
+            old_pos = current_pos  
+            x, y = current_pos
 
-        # ↓ 调整缩进：把这几行放到外层循环里（和单局while同级）↓
+            # 从字典取偏移量，计算新坐标
+            dx, dy = DIRECTIONS[user_input]
+            new_pos = (x + dx, y + dy)
+
+            # try-except处理无效坐标
+            try:
+                cave_rooms[new_pos]
+                current_pos = new_pos
+            except KeyError:
+                print(f" 已超出游戏范围 自动返回上一位置")
+                current_pos = old_pos
+
+        
         again = input("\n是否再来一轮(y/n)：").lower()
         if again != "y":
-            print("游戏结束，再见！")
-            break  # 现在break有对应的循环了（外层while）
+            print("游戏结束，再见")
+            break  
 
 if __name__ == "__main__":
     main()
-
-

@@ -122,12 +122,12 @@ if __name__ == "__main__":        #代码结尾习惯 方便被调用
 import random
 import time
 
-
-for i in range(101):           
-    bar = '[' + '=' * (i // 2) + ' ' * (50 - i // 2) + ']'
-    print(f"\r{bar} {i:3}%", end='',flush=True)
-    time.sleep(0.02)
-print("\n你好，游戏开始")
+def start_game()->NONE:
+    for i in range(101):           
+        bar = '[' + '=' * (i // 2) + ' ' * (50 - i // 2) + ']'
+        print(f"\r{bar} {i:3}%", end='',flush=True)             #使用flush输出更顺畅
+        time.sleep(0.02)
+    print("\n你好，游戏开始")
 
 # 房间数据
 cave_rooms = {             
@@ -137,7 +137,7 @@ cave_rooms = {
     (2, 2): {"name": "宝藏室", "item": "宝藏", "trap": False, "desc": "房间中央有一个宝箱"}
 }
 
-
+REWARD=5
 DIRECTIONS = {
     "上": (-1, 0),  # x-1, y不变            #用字典封起来 不用else if
     "下": (1, 0),   # x+1, y不变
@@ -146,12 +146,12 @@ DIRECTIONS = {
 }
 
 
-def treasure_generator():
+def treasure_generator()->None:
     while True:
         yield random.randint(1, 10)                          
 
 
-def get_available_rooms(current_pos):
+def get_available_rooms(current_pos:tuple)->list[tuple]:
     x, y = current_pos         
     # 遍历DIRECTIONS的偏移量，不用手写x+1,y等
     directions = [(x + dx, y + dy) for dx, dy in DIRECTIONS.values()]
@@ -159,6 +159,8 @@ def get_available_rooms(current_pos):
     return available                #不用filter和lambda
 
 def main():
+    start_game()
+
     while True:
         print("=" * 30)
         print("规则：探索洞穴房间，收集道具，躲避陷阱，找到宝藏即获胜")
@@ -178,7 +180,7 @@ def main():
            
             if room_info["trap"]:
                 print("  触发陷阱 损失 5 分")
-                score -= 5
+                score -= REWARD
                 current_pos = (1, 1)
                 continue
 
